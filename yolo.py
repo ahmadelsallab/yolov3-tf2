@@ -8,15 +8,22 @@ import os
 from timeit import default_timer as timer
 
 import numpy as np
-from keras import backend as K
-from keras.models import load_model
-from keras.layers import Input
+import tensorflow
+#from tensorflow.keras import backend as K
+import tensorflow.python.keras.backend as K
+from tensorflow.keras.models import load_model
+from tensorflow.keras.layers import Input
 from PIL import Image, ImageFont, ImageDraw
 
 from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
 import os
-from keras.utils import multi_gpu_model
+from tensorflow.keras.utils import multi_gpu_model
+
+
+import tensorflow as tf
+tf.compat.v1.disable_eager_execution()# Because the inference runs in self.sess.run--> To be fixed later.
+
 
 class YOLO(object):
     _defaults = {
@@ -126,8 +133,9 @@ class YOLO(object):
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
 
-        font = ImageFont.truetype(font='font/FiraMono-Medium.otf',
-                    size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
+        #font = ImageFont.truetype(font='font/FiraMono-Medium.otf', size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
+        #font = ImageFont.truetype('arial.ttf', size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
+        font = ImageFont.load_default()
         thickness = (image.size[0] + image.size[1]) // 300
 
         for i, c in reversed(list(enumerate(out_classes))):
@@ -159,7 +167,7 @@ class YOLO(object):
             draw.rectangle(
                 [tuple(text_origin), tuple(text_origin + label_size)],
                 fill=self.colors[c])
-            draw.text(text_origin, label, fill=(0, 0, 0), font=font)
+            draw.text(tuple(text_origin), label, fill=(0, 0, 0), font=font)
             del draw
 
         end = timer()
