@@ -1,7 +1,7 @@
 """
 Retrain the YOLO model for your own dataset.
 """
-
+import argparse
 import numpy as np
 
 import tensorflow.keras.backend as K
@@ -14,11 +14,11 @@ from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, yolo_l
 from yolo3.utils import get_random_data
 
 
-def _main():
-    annotation_path = 'train.txt'
-    log_dir = 'logs/000/'
-    classes_path = 'model_data/voc_classes.txt'
-    anchors_path = 'model_data/yolo_anchors.txt'
+def _main(args):
+    annotation_path = args.annotation_path#'train.txt'# FIX to train_path and val_path
+    log_dir = args.log_dir#'logs/000/'
+    classes_path = args.classes_path#'model_data/voc_classes.txt'
+    anchors_path = args.anchors_path#'model_data/yolo_anchors.txt'
     class_names = get_classes(classes_path)
     print("-------------------CLASS NAMES-------------------")
     print(class_names)
@@ -26,14 +26,19 @@ def _main():
     num_classes = len(class_names)
     anchors = get_anchors(anchors_path)
 
-    input_shape = (416,416) # multiple of 32, hw
+    input_shape = args.input_shape#(416,416) # multiple of 32, hw
+    batch_size = args.batch_size
+    warming_up_epochs = args.warming_up_epochs
+    epochs = args.epochs
+    #initial_epochs = args.initial_epochs
+    load_pretrained = args.load_pretrained
 
     is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
-        model = create_tiny_model(input_shape, anchors, num_classes,
+        model = create_tiny_model(input_shape, anchors, num_classes, load_pretrained,
             freeze_body=2, weights_path='model_data/tiny_yolo_weights.h5')
     else:
-        model = create_model(input_shape, anchors, num_classes,
+        model = create_model(input_shape, anchors, num_classes, load_pretrained,
             freeze_body=2, weights_path='model_data/yolo_weights.h5') # make sure you know what you freeze
 
     logging = TensorBoard(log_dir=log_dir)
@@ -42,6 +47,7 @@ def _main():
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=3, verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=1)
 
+    # FIX: later, either args.val_split or args.val_path
     val_split = 0.1
     with open(annotation_path) as f:
         lines = f.readlines()
@@ -53,38 +59,38 @@ def _main():
 
     # Train with frozen layers first, to get a stable loss.
     # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
-    if True:
+    if True: #FIX: args.warming_up_phase
         model.compile(optimizer=Adam(lr=1e-3), loss={
             # use custom yolo_loss Lambda layer.
             'yolo_loss': lambda y_true, y_pred: y_pred})
 
-        batch_size = 32
+        #batch_size = 32
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
                 steps_per_epoch=max(1, num_train//batch_size),
                 validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
                 validation_steps=max(1, num_val//batch_size),
-                epochs=50,
+                epochs=warming_up_epochs,#50,
                 initial_epoch=0,
                 callbacks=[logging, checkpoint])
         model.save_weights(log_dir + 'trained_weights_stage_1.h5')
 
     # Unfreeze and continue training, to fine-tune.
     # Train longer if the result is not good.
-    if True:
+    if True: #FIX: args.fine_tune
         for i in range(len(model.layers)):
             model.layers[i].trainable = True
         model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
         print('Unfreeze all of the layers.')
 
-        batch_size = 32 # note that more GPU memory is required after unfreezing the body
+        #batch_size = 32 # note that more GPU memory is required after unfreezing the body
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
             validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
-            epochs=100,
-            initial_epoch=50,
+            epochs=epochs,#100,
+            initial_epoch=initial_epochs,#50,
             callbacks=[logging, checkpoint, reduce_lr, early_stopping])
         model.save_weights(log_dir + 'trained_weights_final.h5')
 
@@ -191,4 +197,26 @@ def data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, n
     return data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes)
 
 if __name__ == '__main__':
-    _main()
+    parser = argparse.ArgumentParser(prog='YOLO v3 Custom Training')
+    parser.add_argument('--annotation_path', help='the path to the training data')
+    parser.add_argument('--log_dir', help='the path to the logging directory, which will contain the trained weights', default='logs/')
+    parser.add_argument('--classes_path', help='The path to the class names', default='model_data/voc_classes.txt')
+    parser.add_argument('--anchors_path', help='The path to the anchors file obtained by k-means script', default='model_data/yolo_anchors.txt')
+    parser.add_argument('--input_shape', help='The input shape of the image', 
+                        type=tuple, default=(416,416))                        
+    parser.add_argument('--batch_size', help='the training batch size, must be 2^n', 
+                        type=int, default=32)   
+    parser.add_argument('--warming_up_epochs', help='The number of epochs to train the top class layers as per transfer learning guidelines', 
+                        type=int, default=50)     
+    parser.add_argument('--epochs', help='The fine tuninig epochs', 
+                        type=int, default=50)
+    parser.add_argument('--load_pretrained', help='If we want to load a pre-trained model or not', 
+                        type=bool, default=True)
+    parser.add_argument('--pretrained_model_path', help='the location of the pre-trained model', 
+                        default='model_data/yolo_weights.h5')                            
+    args = parser.parse_args()
+
+
+
+
+    _main(args)
