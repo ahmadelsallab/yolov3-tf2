@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 from os import getcwd
+import os
 
 sets=[('2007', 'train'), ('2007', 'val'), ('2007', 'test')]
 
@@ -29,7 +30,8 @@ for year, image_set in sets:
     #image_ids = open(VOC_dir + 'VOC%s/ImageSets/Main/%s.txt'%(year, image_set)).read().strip().split()
     #file_name = VOC_dir + '%s_%s.txt'%(year, image_set)
     #list_file = open(file_name, 'w')
-	list_file = open('%s_%s.txt'%(year, image_set), 'w')
+    file_name = '%s_%s.txt'%(year, image_set)
+    list_file = open(file_name, 'w')
     if not os.path.isfile(file_name):
       for image_id in image_ids:
           list_file.write('%s/VOCdevkit/VOC%s/JPEGImages/%s.jpg'%(wd, year, image_id))
