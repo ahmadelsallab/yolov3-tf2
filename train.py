@@ -90,7 +90,7 @@ def _main(args):
             validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
             epochs=epochs,#100,
-            initial_epoch=initial_epochs,#50,
+            initial_epoch=warming_up_epochs,#50,
             callbacks=[logging, checkpoint, reduce_lr, early_stopping])
         model.save_weights(log_dir + 'trained_weights_final.h5')
 
