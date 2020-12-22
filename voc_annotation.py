@@ -34,14 +34,14 @@ def _main(args):
         list_file = open(file_name, 'w')
         #file_name = '%s_%s.txt'%(year, image_set)
         #list_file = open(file_name, 'w')
-        if not os.path.isfile(file_name):
-            for image_id in image_ids:
-                #list_file.write('%s/VOCdevkit/VOC%s/JPEGImages/%s.jpg'%(wd, year, image_id))
-                list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(VOC_dir, year, image_id))
-                #list_file.write('/content/drive/My\ Drive/Colab\ Notebooks/Practical_DL_ITI_2019_CV/VOCdevkit/VOC%s/JPEGImages/%s.jpg'%(year, image_id))
-                convert_annotation(year, image_id, list_file, VOC_dir)
-                list_file.write('\n')
-            list_file.close()
+        #if not os.path.isfile(file_name):
+        for image_id in image_ids:
+            #list_file.write('%s/VOCdevkit/VOC%s/JPEGImages/%s.jpg'%(wd, year, image_id))
+            list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(VOC_dir, year, image_id))
+            #list_file.write('/content/drive/My\ Drive/Colab\ Notebooks/Practical_DL_ITI_2019_CV/VOCdevkit/VOC%s/JPEGImages/%s.jpg'%(year, image_id))
+            convert_annotation(year, image_id, list_file, VOC_dir)
+            list_file.write('\n')
+        list_file.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='YOLO v3 Custom Training')
