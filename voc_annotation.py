@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 from os import getcwd
 import os
+import argparse
 
 sets=[('2007', 'train'), ('2007', 'val'), ('2007', 'test')]
 
@@ -24,20 +25,30 @@ def convert_annotation(year, image_id, list_file):
         list_file.write(" " + ",".join([str(a) for a in b]) + ',' + str(cls_id))
 
 wd = getcwd()
+def _main(args):
+    VOC_dir = args.VOC_dir
+    for year, image_set in sets:
+        #image_ids = open('../VOCdevkit/VOC%s/ImageSets/Main/%s.txt'%(year, image_set)).read().strip().split()
+        image_ids = open(VOC_dir + 'VOC%s/ImageSets/Main/%s.txt'%(year, image_set)).read().strip().split()
+        file_name = VOC_dir + '%s_%s.txt'%(year, image_set)
+        list_file = open(file_name, 'w')
+        #file_name = '%s_%s.txt'%(year, image_set)
+        #list_file = open(file_name, 'w')
+        if not os.path.isfile(file_name):
+        for image_id in image_ids:
+            list_file.write('%s/VOCdevkit/VOC%s/JPEGImages/%s.jpg'%(wd, year, image_id))
+            #list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(VOC_dir, year, image_id))
+            #list_file.write('/content/drive/My\ Drive/Colab\ Notebooks/Practical_DL_ITI_2019_CV/VOCdevkit/VOC%s/JPEGImages/%s.jpg'%(year, image_id))
+            convert_annotation(year, image_id, list_file)
+            list_file.write('\n')
+        list_file.close()
 
-for year, image_set in sets:
-    image_ids = open('../VOCdevkit/VOC%s/ImageSets/Main/%s.txt'%(year, image_set)).read().strip().split()
-    #image_ids = open(VOC_dir + 'VOC%s/ImageSets/Main/%s.txt'%(year, image_set)).read().strip().split()
-    #file_name = VOC_dir + '%s_%s.txt'%(year, image_set)
-    #list_file = open(file_name, 'w')
-    file_name = '%s_%s.txt'%(year, image_set)
-    list_file = open(file_name, 'w')
-    if not os.path.isfile(file_name):
-      for image_id in image_ids:
-          list_file.write('%s/VOCdevkit/VOC%s/JPEGImages/%s.jpg'%(wd, year, image_id))
-          #list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(VOC_dir, year, image_id))
-          #list_file.write('/content/drive/My\ Drive/Colab\ Notebooks/Practical_DL_ITI_2019_CV/VOCdevkit/VOC%s/JPEGImages/%s.jpg'%(year, image_id))
-          convert_annotation(year, image_id, list_file)
-          list_file.write('\n')
-      list_file.close()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog='YOLO v3 Custom Training')
+    parser.add_argument('--VOC_dir', help='the path to the VOC data', default='VOCdevkit/')
+    args = parser.parse_args()
 
+
+
+
+    _main(args)
