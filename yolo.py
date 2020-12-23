@@ -48,10 +48,18 @@ class YOLO(object):
     def __init__(self, **kwargs):
         self.__dict__.update(self._defaults) # set up default values
         self.__dict__.update(kwargs) # and update with user overrides
+        '''
+        self.anchors = kwargs['anchors']
+        self.class_names = kwargs['class_names']
+        self.model_path = kwargs['model_path']
+        self.model_image_size = kwargs['input_shape']
+        self.gpu_num = kwargs['gpu_num']
+        '''
         self.class_names = self._get_class()
         self.anchors = self._get_anchors()
         self.sess = K.get_session()
         self.boxes, self.scores, self.classes = self.generate()
+        
 
     def _get_class(self):
         classes_path = os.path.expanduser(self.classes_path)

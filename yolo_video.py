@@ -25,7 +25,7 @@ if __name__ == '__main__':
     Command line options
     '''
     parser.add_argument(
-        '--model', type=str,
+        '--model_path', type=str,
         help='path to model weight file, default ' + YOLO.get_defaults("model_path")
     )
 
@@ -60,6 +60,9 @@ if __name__ == '__main__':
         "--output", nargs='?', type=str, default="",
         help = "[Optional] Video output path"
     )
+
+    parser.add_argument('--input_shape', help='The input shape of the image', 
+                        type=tuple, default=(416,416))    
 
     FLAGS = parser.parse_args()
 
