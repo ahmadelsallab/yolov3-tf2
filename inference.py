@@ -5,24 +5,24 @@ from PIL import Image
 
 def detect_img(yolo, img=None, out_img=None):
     if img == None:
-      # Image by image detection mode
-      while True:
-          img = input('Input image filename:')
-          try:
-              image = Image.open(img)
-          except:
-              print('Open Error! Try again!')
-              continue
-          else:
-              r_image = yolo.detect_image(image)
-              r_image.show()
+        # Image by image detection mode
+        while True:
+            img = input('Input image filename:')
+            try:
+                image = Image.open(img)
+            except:
+                print('Open Error! Try again!')
+                continue
+            else:
+                r_image = yolo.detect_image(image)
+                r_image.show()
     else:
         # Input image provided
         try:
             image = Image.open(img)
         except:
-            print('Open Error! Try again!')
-            continue
+            print('Open Error! Try again!', img)
+            
         else:
             r_image = yolo.detect_image(image)
             print('Saving img:', out_img)
