@@ -3,9 +3,21 @@ import argparse
 from yolo import YOLO, detect_video
 from PIL import Image
 
-def detect_img(yolo):
-    while True:
-        img = input('Input image filename:')
+def detect_img(yolo, img=None, out_img=None):
+    if img == None:
+      # Image by image detection mode
+      while True:
+          img = input('Input image filename:')
+          try:
+              image = Image.open(img)
+          except:
+              print('Open Error! Try again!')
+              continue
+          else:
+              r_image = yolo.detect_image(image)
+              r_image.show()
+    else:
+        # Input image provided
         try:
             image = Image.open(img)
         except:
@@ -13,7 +25,9 @@ def detect_img(yolo):
             continue
         else:
             r_image = yolo.detect_image(image)
-            r_image.show()
+            print('Saving img:', out_img)
+            r_image.save(out_img)        
+
     yolo.close_session()
 
 FLAGS = None
@@ -45,20 +59,24 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        '--image', default=False, action="store_true",
-        help='Image detection mode, will ignore all positional arguments'
+        '--image', default=True, action="store_true",
+        help='Image detection mode'
     )
+    parser.add_argument(
+        '--video', default=False, action="store_true",
+        help='Video detection mode'
+    )    
     '''
     Command line positional arguments -- for video detection mode
     '''
     parser.add_argument(
-        "--input", nargs='?', type=str,required=False,default='./path2your_video',
-        help = "Video input path"
+        "--input", nargs='?', type=str,required=False,default='./path2your_input_file',
+        help = "Video or image input path"
     )
 
     parser.add_argument(
-        "--output", nargs='?', type=str, default="",
-        help = "[Optional] Video output path"
+        "--output", nargs='?', type=str, default="./logs/out_img.jpg",
+        help = "[Optional] Video/Image output path"
     )
 
     parser.add_argument('--input_shape', help='The input shape of the image', 
@@ -72,9 +90,14 @@ if __name__ == '__main__':
         """
         print("Image detection mode")
         if "input" in FLAGS:
-            print(" Ignoring remaining command line arguments: " + FLAGS.input + "," + FLAGS.output)
-        detect_img(YOLO(**vars(FLAGS)))
-    elif "input" in FLAGS:
-        detect_video(YOLO(**vars(FLAGS)), FLAGS.input, FLAGS.output)
-    else:
-        print("Must specify at least video_input_path.  See usage with --help.")
+            print("Input image provided")
+            #print(" Ignoring remaining command line arguments: " + FLAGS.input + "," + FLAGS.output)
+            detect_img(YOLO(**vars(FLAGS)), img=FLAGS.input, out_img=FLAGS.output)
+        else:
+            detect_img(YOLO(**vars(FLAGS)), out_img=FLAGS.output)
+       
+    elif FLAGS.video:       
+        if "input" in FLAGS:
+          detect_video(YOLO(**vars(FLAGS)), FLAGS.input, FLAGS.output)
+        else:
+            print("Must specify at least video_input_path.  See usage with --help.")
